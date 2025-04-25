@@ -1,65 +1,77 @@
-/*
- * EjemploUSART.c
- *
- * Created: 9/04/2025 16:54:47
- * Author : mario
- */
-
+#define F_CPU 16000000UL  // Frecuencia del reloj del sistema
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-// FUNCIONES DE USART
+// Inicialización UART a 9600 baudios
+void UART_init(void) {
+	// Configura TX como salida, RX como entrada
+	DDRD |= (1 << PD1);   // TX
+	DDRD &= ~(1 << PD0);  // RX
 
-void initUART() {
-    // Paso 1: Configurar pines PD1 (TX) como salida y PD0 (RX) como entrada
-    DDRD |= (1 << DDD1);   // TX (PD1) como salida
-    DDRD &= ~(1 << DDD0);  // RX (PD0) como entrada
+	// Configura baud rate a 9600 (F_CPU = 16 MHz)
+	// UBRR = (F_CPU / (16 * BAUD)) - 1 = 103
+	UBRR0 = 103;
 
-    // Paso 2: UCSR0A
-    UCSR0A = 0;
+	// Habilita recepción, transmisión e interrupción de recepción
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
-    // Paso 3: Habilitar recepción, transmisión y la interrupción por recepción
-    UCSR0B |= (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
-
-    // Paso 4: Configurar 8 bits de datos, 1 bit de parada, sin paridad
-    UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);
-
-    // Paso 5: Configurar baud rate a 9600 (para F_CPU = 16MHz -> UBRR0 = 103)
-    UBRR0 = 103;
+	// 8 bits, 1 bit de stop, sin paridad
+	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
-void writeChar(char caracter) {
-    while (!(UCSR0A & (1 << UDRE0)));  // Esperar a que el buffer esté listo
-    UDR0 = caracter;                   // Enviar carácter
+// Enviar un carácter
+void UART_sendChar(char c) {
+	while (!(UCSR0A & (1 << UDRE0)));  // Espera buffer libre
+	UDR0 = c;
 }
 
-void writeString(char* texto) {
-    for (unsigned int i = 0; texto[i] != '\0'; i++) {
-        writeChar(texto[i]);
-    }
+// Enviar una cadena de texto
+void UART_sendString(const char* str) {
+	while (*str) 
+	{
+		UART_sendChar(*str++);
+	}
 }
 
-// SETUP Y LOOP PRINCIPAL
+void DisplayInPORTBD(char data)
+{
+	// Limpiar los bits PD2 a PD5 de PORTD, sin afectar PD0 y PD1
+	PORTD &= 0x03;  // 0x03 es 00000011, no afecta a PD2-PD5
 
-void setup(void) {
-    cli();       // Desactivar interrupciones globales
-    initUART();  // Inicializar USART
-    sei();       // Activar interrupciones globales
+	// Mostrar el nibble bajo de `data` (los 4 bits más bajos) en PORTD (PD2-PD5)
+	PORTD |= (data & 0x0F) << 2;  // Escribir solo el nibble bajo (los 4 bits más bajos)
+
+	// Mostrar el nibble alto de `data` (los 4 bits más altos) en PORTB (PB0-PB3)
+	PORTB = (data & 0xF0) >> 4;  // Escribir el nibble alto en PB0-PB3
+}
+
+
+
+// Interrupción al recibir carácter
+ISR(USART_RX_vect) {
+	char data = UDR0;     // Leer carácter recibido
+	DisplayInPORTBD(data);
+	UART_sendChar(data);  // Hacer echo del carácter
+}
+
+void setup(void)
+{
+	// Habilitar salida en PD2 a PD5
+	DDRD |= (1 << PORTD2) | (1 << PORTD3) | (1 << PORTD4) | (1 << PORTD5);
+	
+	// Habilitar salida en PB0 a PB3
+	DDRB |= 0X0F;
 }
 
 int main(void) {
-    setup();
-    writeString("HOLA\r\n");
+	cli();           // Desactiva interrupciones
+	setup();
+	UART_init();     // Inicializa UART
+	sei();           // Activa interrupciones
 
-    while (1);  // Loop principal (espera pasiva)
-}
+	UART_sendString("Hola desde UART!\r\n");
 
-// INTERRUPCIÓN AL RECIBIR DATOS
-
-ISR(USART_RX_vect) {
-    char recibido = UDR0;  // Leer carácter recibido
-    writeString("Texto:");
-    writeChar(recibido);   // Reenviar el carácter recibido
-    writeChar('\r');
-    writeChar('\n');
+	while (1) {
+		// Todo se maneja por interrupción
+	}
 }
