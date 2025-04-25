@@ -33,6 +33,14 @@ void UART_sendString(const char* str) {
 	}
 }
 
+// Enviar una cadena de texto (Pero con un arreglo de caracteres)
+void UART_sendString_ALT(char str[]) {
+	while (*str)
+	{
+		UART_sendChar(*str++);
+	}
+}
+
 void DisplayInPORTBD(char data)
 {
 	// Limpiar los bits PD2 a PD5 de PORTD, sin afectar PD0 y PD1
@@ -69,7 +77,7 @@ int main(void) {
 	UART_init();     // Inicializa UART
 	sei();           // Activa interrupciones
 
-	UART_sendString("Hola desde UART!\r\n");
+	UART_sendString_ALT("Hola desde UART!\r\n");
 
 	while (1) {
 		// Todo se maneja por interrupción
