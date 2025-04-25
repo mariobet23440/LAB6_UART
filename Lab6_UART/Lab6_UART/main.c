@@ -53,14 +53,42 @@ void DisplayInPORTBD(char data)
 	PORTB = (data & 0xF0) >> 4;  // Escribir el nibble alto en PB0-PB3
 }
 
+void ShowMenu(void)
+{
+	UART_sendString("Escoja una opción\r\n");
+	UART_sendString("1. Leer Potenciómetro\r\n");
+	UART_sendString("2. Enviar ASCII\r\n");
+}
 
 
 // Interrupción al recibir carácter
-ISR(USART_RX_vect) {
+ISR(USART_RX_vect) 
+{
 	char data = UDR0;     // Leer carácter recibido
-	DisplayInPORTBD(data);
-	UART_sendChar(data);  // Hacer echo del carácter
+	UART_sendString("Caracter Ingresado: ");
+	UART_sendChar(data);
+	UART_sendString("\r\n");
+	switch(data)
+	{
+		case 0x31:
+			UART_sendString("Opción 1 seleccionada - Leer Potenciómetro\r\n");
+			break;
+			
+		case 0x32:
+			UART_sendString("Opción 2 seleccionada - Mostrar ASCII\r\n");
+			DisplayInPORTBD(data);
+			break;
+		
+		default:
+			UART_sendString("La opción seleccionada no es válida\r\n");
+			break;
+		
+	}
+	
+	ShowMenu();
 }
+
+// Siempre vivirá en tus recuer
 
 void setup(void)
 {
@@ -78,6 +106,7 @@ int main(void) {
 	sei();           // Activa interrupciones
 
 	UART_sendString_ALT("Hola desde UART!\r\n");
+	ShowMenu();
 
 	while (1) {
 		// Todo se maneja por interrupción

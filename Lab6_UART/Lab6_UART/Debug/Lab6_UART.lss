@@ -3,29 +3,29 @@ Lab6_UART.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .data         00000014  00800100  00000188  000001fc  2**0
+  0 .data         000000e2  00800100  000001fa  0000026e  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  1 .text         00000188  00000000  00000000  00000074  2**1
+  1 .text         000001fa  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .comment      00000030  00000000  00000000  00000210  2**0
+  2 .comment      00000030  00000000  00000000  00000350  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000240  2**2
+  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000380  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 00000058  00000000  00000000  00000280  2**0
+  4 .debug_aranges 00000060  00000000  00000000  000003c0  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000007fa  00000000  00000000  000002d8  2**0
+  5 .debug_info   0000090b  00000000  00000000  00000420  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 000006bf  00000000  00000000  00000ad2  2**0
+  6 .debug_abbrev 000006bf  00000000  00000000  00000d2b  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   000002f1  00000000  00000000  00001191  2**0
+  7 .debug_line   00000350  00000000  00000000  000013ea  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  000000f8  00000000  00000000  00001484  2**2
+  8 .debug_frame  00000108  00000000  00000000  0000173c  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000003bf  00000000  00000000  0000157c  2**0
+  9 .debug_str    000003c8  00000000  00000000  00001844  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    000001ba  00000000  00000000  0000193b  2**0
+ 10 .debug_loc    000001ba  00000000  00000000  00001c0c  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000048  00000000  00000000  00001af5  2**0
+ 11 .debug_ranges 00000050  00000000  00000000  00001dc6  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -49,7 +49,7 @@ Disassembly of section .text:
   3c:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
   40:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
   44:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
-  48:	0c 94 84 00 	jmp	0x108	; 0x108 <__vector_18>
+  48:	0c 94 9e 00 	jmp	0x13c	; 0x13c <__vector_18>
   4c:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
   50:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
   54:	0c 94 49 00 	jmp	0x92	; 0x92 <__bad_interrupt>
@@ -70,72 +70,90 @@ Disassembly of section .text:
   74:	11 e0       	ldi	r17, 0x01	; 1
   76:	a0 e0       	ldi	r26, 0x00	; 0
   78:	b1 e0       	ldi	r27, 0x01	; 1
-  7a:	e8 e8       	ldi	r30, 0x88	; 136
+  7a:	ea ef       	ldi	r30, 0xFA	; 250
   7c:	f1 e0       	ldi	r31, 0x01	; 1
   7e:	02 c0       	rjmp	.+4      	; 0x84 <__do_copy_data+0x10>
   80:	05 90       	lpm	r0, Z+
   82:	0d 92       	st	X+, r0
-  84:	a4 31       	cpi	r26, 0x14	; 20
+  84:	a2 3e       	cpi	r26, 0xE2	; 226
   86:	b1 07       	cpc	r27, r17
   88:	d9 f7       	brne	.-10     	; 0x80 <__do_copy_data+0xc>
-  8a:	0e 94 b7 00 	call	0x16e	; 0x16e <main>
-  8e:	0c 94 c2 00 	jmp	0x184	; 0x184 <_exit>
+  8a:	0e 94 ee 00 	call	0x1dc	; 0x1dc <main>
+  8e:	0c 94 fb 00 	jmp	0x1f6	; 0x1f6 <_exit>
 
 00000092 <__bad_interrupt>:
   92:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
 
 00000096 <UART_init>:
-void UART_sendString(const char* str) {
-	while (*str) 
-	{
-		UART_sendChar(*str++);
-	}
-}
+#include <avr/interrupt.h>
+
+// Inicialización UART a 9600 baudios
+void UART_init(void) {
+	// Configura TX como salida, RX como entrada
+	DDRD |= (1 << PD1);   // TX
   96:	8a b1       	in	r24, 0x0a	; 10
   98:	82 60       	ori	r24, 0x02	; 2
   9a:	8a b9       	out	0x0a, r24	; 10
+	DDRD &= ~(1 << PD0);  // RX
   9c:	8a b1       	in	r24, 0x0a	; 10
   9e:	8e 7f       	andi	r24, 0xFE	; 254
   a0:	8a b9       	out	0x0a, r24	; 10
+
+	// Configura baud rate a 9600 (F_CPU = 16 MHz)
+	// UBRR = (F_CPU / (16 * BAUD)) - 1 = 103
+	UBRR0 = 103;
   a2:	87 e6       	ldi	r24, 0x67	; 103
   a4:	90 e0       	ldi	r25, 0x00	; 0
   a6:	90 93 c5 00 	sts	0x00C5, r25	; 0x8000c5 <__TEXT_REGION_LENGTH__+0x7f80c5>
   aa:	80 93 c4 00 	sts	0x00C4, r24	; 0x8000c4 <__TEXT_REGION_LENGTH__+0x7f80c4>
+
+	// Habilita recepción, transmisión e interrupción de recepción
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
   ae:	88 e9       	ldi	r24, 0x98	; 152
   b0:	80 93 c1 00 	sts	0x00C1, r24	; 0x8000c1 <__TEXT_REGION_LENGTH__+0x7f80c1>
+
+	// 8 bits, 1 bit de stop, sin paridad
+	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
   b4:	86 e0       	ldi	r24, 0x06	; 6
   b6:	80 93 c2 00 	sts	0x00C2, r24	; 0x8000c2 <__TEXT_REGION_LENGTH__+0x7f80c2>
   ba:	08 95       	ret
 
 000000bc <UART_sendChar>:
+}
+
+// Enviar un carácter
+void UART_sendChar(char c) {
+	while (!(UCSR0A & (1 << UDRE0)));  // Espera buffer libre
   bc:	90 91 c0 00 	lds	r25, 0x00C0	; 0x8000c0 <__TEXT_REGION_LENGTH__+0x7f80c0>
   c0:	95 ff       	sbrs	r25, 5
   c2:	fc cf       	rjmp	.-8      	; 0xbc <UART_sendChar>
+	UDR0 = c;
   c4:	80 93 c6 00 	sts	0x00C6, r24	; 0x8000c6 <__TEXT_REGION_LENGTH__+0x7f80c6>
   c8:	08 95       	ret
 
-000000ca <UART_sendString_ALT>:
+000000ca <UART_sendString>:
+}
 
-// Enviar una cadena de texto (Pero con un arreglo de caracteres)
-void UART_sendString_ALT(char str[]) {
+// Enviar una cadena de texto
+void UART_sendString(const char* str) {
   ca:	cf 93       	push	r28
   cc:	df 93       	push	r29
   ce:	ec 01       	movw	r28, r24
-	while (*str)
-  d0:	03 c0       	rjmp	.+6      	; 0xd8 <UART_sendString_ALT+0xe>
+	while (*str) 
+  d0:	03 c0       	rjmp	.+6      	; 0xd8 <UART_sendString+0xe>
 	{
 		UART_sendChar(*str++);
   d2:	21 96       	adiw	r28, 0x01	; 1
   d4:	0e 94 5e 00 	call	0xbc	; 0xbc <UART_sendChar>
-	}
+	UDR0 = c;
 }
 
-// Enviar una cadena de texto (Pero con un arreglo de caracteres)
-void UART_sendString_ALT(char str[]) {
-	while (*str)
+// Enviar una cadena de texto
+void UART_sendString(const char* str) {
+	while (*str) 
   d8:	88 81       	ld	r24, Y
   da:	81 11       	cpse	r24, r1
-  dc:	fa cf       	rjmp	.-12     	; 0xd2 <UART_sendString_ALT+0x8>
+  dc:	fa cf       	rjmp	.-12     	; 0xd2 <UART_sendString+0x8>
 	{
 		UART_sendChar(*str++);
 	}
@@ -144,128 +162,222 @@ void UART_sendString_ALT(char str[]) {
   e0:	cf 91       	pop	r28
   e2:	08 95       	ret
 
-000000e4 <DisplayInPORTBD>:
+000000e4 <UART_sendString_ALT>:
+
+// Enviar una cadena de texto (Pero con un arreglo de caracteres)
+void UART_sendString_ALT(char str[]) {
+  e4:	cf 93       	push	r28
+  e6:	df 93       	push	r29
+  e8:	ec 01       	movw	r28, r24
+	while (*str)
+  ea:	03 c0       	rjmp	.+6      	; 0xf2 <UART_sendString_ALT+0xe>
+	{
+		UART_sendChar(*str++);
+  ec:	21 96       	adiw	r28, 0x01	; 1
+  ee:	0e 94 5e 00 	call	0xbc	; 0xbc <UART_sendChar>
+	}
+}
+
+// Enviar una cadena de texto (Pero con un arreglo de caracteres)
+void UART_sendString_ALT(char str[]) {
+	while (*str)
+  f2:	88 81       	ld	r24, Y
+  f4:	81 11       	cpse	r24, r1
+  f6:	fa cf       	rjmp	.-12     	; 0xec <UART_sendString_ALT+0x8>
+	{
+		UART_sendChar(*str++);
+	}
+}
+  f8:	df 91       	pop	r29
+  fa:	cf 91       	pop	r28
+  fc:	08 95       	ret
+
+000000fe <DisplayInPORTBD>:
 
 void DisplayInPORTBD(char data)
 {
 	// Limpiar los bits PD2 a PD5 de PORTD, sin afectar PD0 y PD1
 	PORTD &= 0x03;  // 0x03 es 00000011, no afecta a PD2-PD5
-  e4:	9b b1       	in	r25, 0x0b	; 11
-  e6:	93 70       	andi	r25, 0x03	; 3
-  e8:	9b b9       	out	0x0b, r25	; 11
+  fe:	9b b1       	in	r25, 0x0b	; 11
+ 100:	93 70       	andi	r25, 0x03	; 3
+ 102:	9b b9       	out	0x0b, r25	; 11
 
 	// Mostrar el nibble bajo de `data` (los 4 bits más bajos) en PORTD (PD2-PD5)
 	PORTD |= (data & 0x0F) << 2;  // Escribir solo el nibble bajo (los 4 bits más bajos)
-  ea:	4b b1       	in	r20, 0x0b	; 11
-  ec:	98 2f       	mov	r25, r24
-  ee:	9f 70       	andi	r25, 0x0F	; 15
-  f0:	29 2f       	mov	r18, r25
-  f2:	30 e0       	ldi	r19, 0x00	; 0
-  f4:	22 0f       	add	r18, r18
-  f6:	33 1f       	adc	r19, r19
-  f8:	22 0f       	add	r18, r18
-  fa:	33 1f       	adc	r19, r19
-  fc:	24 2b       	or	r18, r20
-  fe:	2b b9       	out	0x0b, r18	; 11
+ 104:	4b b1       	in	r20, 0x0b	; 11
+ 106:	98 2f       	mov	r25, r24
+ 108:	9f 70       	andi	r25, 0x0F	; 15
+ 10a:	29 2f       	mov	r18, r25
+ 10c:	30 e0       	ldi	r19, 0x00	; 0
+ 10e:	22 0f       	add	r18, r18
+ 110:	33 1f       	adc	r19, r19
+ 112:	22 0f       	add	r18, r18
+ 114:	33 1f       	adc	r19, r19
+ 116:	24 2b       	or	r18, r20
+ 118:	2b b9       	out	0x0b, r18	; 11
 
 	// Mostrar el nibble alto de `data` (los 4 bits más altos) en PORTB (PB0-PB3)
 	PORTB = (data & 0xF0) >> 4;  // Escribir el nibble alto en PB0-PB3
- 100:	82 95       	swap	r24
- 102:	8f 70       	andi	r24, 0x0F	; 15
- 104:	85 b9       	out	0x05, r24	; 5
- 106:	08 95       	ret
+ 11a:	82 95       	swap	r24
+ 11c:	8f 70       	andi	r24, 0x0F	; 15
+ 11e:	85 b9       	out	0x05, r24	; 5
+ 120:	08 95       	ret
 
-00000108 <__vector_18>:
+00000122 <ShowMenu>:
 }
 
+void ShowMenu(void)
+{
+	UART_sendString("Escoja una opción\r\n");
+ 122:	80 e0       	ldi	r24, 0x00	; 0
+ 124:	91 e0       	ldi	r25, 0x01	; 1
+ 126:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+	UART_sendString("1. Leer Potenciómetro\r\n");
+ 12a:	84 e1       	ldi	r24, 0x14	; 20
+ 12c:	91 e0       	ldi	r25, 0x01	; 1
+ 12e:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+	UART_sendString("2. Enviar ASCII\r\n");
+ 132:	8c e2       	ldi	r24, 0x2C	; 44
+ 134:	91 e0       	ldi	r25, 0x01	; 1
+ 136:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+ 13a:	08 95       	ret
+
+0000013c <__vector_18>:
+}
 
 
 // Interrupción al recibir carácter
-ISR(USART_RX_vect) {
- 108:	1f 92       	push	r1
- 10a:	0f 92       	push	r0
- 10c:	0f b6       	in	r0, 0x3f	; 63
- 10e:	0f 92       	push	r0
- 110:	11 24       	eor	r1, r1
- 112:	2f 93       	push	r18
- 114:	3f 93       	push	r19
- 116:	4f 93       	push	r20
- 118:	5f 93       	push	r21
- 11a:	6f 93       	push	r22
- 11c:	7f 93       	push	r23
- 11e:	8f 93       	push	r24
- 120:	9f 93       	push	r25
- 122:	af 93       	push	r26
- 124:	bf 93       	push	r27
- 126:	cf 93       	push	r28
- 128:	ef 93       	push	r30
- 12a:	ff 93       	push	r31
+ISR(USART_RX_vect) 
+{
+ 13c:	1f 92       	push	r1
+ 13e:	0f 92       	push	r0
+ 140:	0f b6       	in	r0, 0x3f	; 63
+ 142:	0f 92       	push	r0
+ 144:	11 24       	eor	r1, r1
+ 146:	2f 93       	push	r18
+ 148:	3f 93       	push	r19
+ 14a:	4f 93       	push	r20
+ 14c:	5f 93       	push	r21
+ 14e:	6f 93       	push	r22
+ 150:	7f 93       	push	r23
+ 152:	8f 93       	push	r24
+ 154:	9f 93       	push	r25
+ 156:	af 93       	push	r26
+ 158:	bf 93       	push	r27
+ 15a:	cf 93       	push	r28
+ 15c:	ef 93       	push	r30
+ 15e:	ff 93       	push	r31
 	char data = UDR0;     // Leer carácter recibido
- 12c:	c0 91 c6 00 	lds	r28, 0x00C6	; 0x8000c6 <__TEXT_REGION_LENGTH__+0x7f80c6>
-	DisplayInPORTBD(data);
- 130:	8c 2f       	mov	r24, r28
- 132:	0e 94 72 00 	call	0xe4	; 0xe4 <DisplayInPORTBD>
-	UART_sendChar(data);  // Hacer echo del carácter
- 136:	8c 2f       	mov	r24, r28
- 138:	0e 94 5e 00 	call	0xbc	; 0xbc <UART_sendChar>
+ 160:	c0 91 c6 00 	lds	r28, 0x00C6	; 0x8000c6 <__TEXT_REGION_LENGTH__+0x7f80c6>
+	UART_sendString("Caracter Ingresado: ");
+ 164:	8e e3       	ldi	r24, 0x3E	; 62
+ 166:	91 e0       	ldi	r25, 0x01	; 1
+ 168:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+	UART_sendChar(data);
+ 16c:	8c 2f       	mov	r24, r28
+ 16e:	0e 94 5e 00 	call	0xbc	; 0xbc <UART_sendChar>
+	UART_sendString("\r\n");
+ 172:	8e ed       	ldi	r24, 0xDE	; 222
+ 174:	91 e0       	ldi	r25, 0x01	; 1
+ 176:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+	switch(data)
+ 17a:	c1 33       	cpi	r28, 0x31	; 49
+ 17c:	19 f0       	breq	.+6      	; 0x184 <__vector_18+0x48>
+ 17e:	c2 33       	cpi	r28, 0x32	; 50
+ 180:	31 f0       	breq	.+12     	; 0x18e <__vector_18+0x52>
+ 182:	0d c0       	rjmp	.+26     	; 0x19e <__vector_18+0x62>
+	{
+		case 0x31:
+			UART_sendString("Opción 1 seleccionada - Leer Potenciómetro\r\n");
+ 184:	83 e5       	ldi	r24, 0x53	; 83
+ 186:	91 e0       	ldi	r25, 0x01	; 1
+ 188:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+			break;
+ 18c:	0c c0       	rjmp	.+24     	; 0x1a6 <__vector_18+0x6a>
+			
+		case 0x32:
+			UART_sendString("Opción 2 seleccionada - Mostrar ASCII\r\n");
+ 18e:	80 e8       	ldi	r24, 0x80	; 128
+ 190:	91 e0       	ldi	r25, 0x01	; 1
+ 192:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+			DisplayInPORTBD(data);
+ 196:	8c 2f       	mov	r24, r28
+ 198:	0e 94 7f 00 	call	0xfe	; 0xfe <DisplayInPORTBD>
+			break;
+ 19c:	04 c0       	rjmp	.+8      	; 0x1a6 <__vector_18+0x6a>
+		
+		default:
+			UART_sendString("La opción seleccionada no es válida\r\n");
+ 19e:	88 ea       	ldi	r24, 0xA8	; 168
+ 1a0:	91 e0       	ldi	r25, 0x01	; 1
+ 1a2:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString>
+			break;
+		
+	}
+	
+	ShowMenu();
+ 1a6:	0e 94 91 00 	call	0x122	; 0x122 <ShowMenu>
 }
- 13c:	ff 91       	pop	r31
- 13e:	ef 91       	pop	r30
- 140:	cf 91       	pop	r28
- 142:	bf 91       	pop	r27
- 144:	af 91       	pop	r26
- 146:	9f 91       	pop	r25
- 148:	8f 91       	pop	r24
- 14a:	7f 91       	pop	r23
- 14c:	6f 91       	pop	r22
- 14e:	5f 91       	pop	r21
- 150:	4f 91       	pop	r20
- 152:	3f 91       	pop	r19
- 154:	2f 91       	pop	r18
- 156:	0f 90       	pop	r0
- 158:	0f be       	out	0x3f, r0	; 63
- 15a:	0f 90       	pop	r0
- 15c:	1f 90       	pop	r1
- 15e:	18 95       	reti
+ 1aa:	ff 91       	pop	r31
+ 1ac:	ef 91       	pop	r30
+ 1ae:	cf 91       	pop	r28
+ 1b0:	bf 91       	pop	r27
+ 1b2:	af 91       	pop	r26
+ 1b4:	9f 91       	pop	r25
+ 1b6:	8f 91       	pop	r24
+ 1b8:	7f 91       	pop	r23
+ 1ba:	6f 91       	pop	r22
+ 1bc:	5f 91       	pop	r21
+ 1be:	4f 91       	pop	r20
+ 1c0:	3f 91       	pop	r19
+ 1c2:	2f 91       	pop	r18
+ 1c4:	0f 90       	pop	r0
+ 1c6:	0f be       	out	0x3f, r0	; 63
+ 1c8:	0f 90       	pop	r0
+ 1ca:	1f 90       	pop	r1
+ 1cc:	18 95       	reti
 
-00000160 <setup>:
+000001ce <setup>:
+// Siempre vivirá en tus recuer
 
 void setup(void)
 {
 	// Habilitar salida en PD2 a PD5
 	DDRD |= (1 << PORTD2) | (1 << PORTD3) | (1 << PORTD4) | (1 << PORTD5);
- 160:	8a b1       	in	r24, 0x0a	; 10
- 162:	8c 63       	ori	r24, 0x3C	; 60
- 164:	8a b9       	out	0x0a, r24	; 10
+ 1ce:	8a b1       	in	r24, 0x0a	; 10
+ 1d0:	8c 63       	ori	r24, 0x3C	; 60
+ 1d2:	8a b9       	out	0x0a, r24	; 10
 	
 	// Habilitar salida en PB0 a PB3
 	DDRB |= 0X0F;
- 166:	84 b1       	in	r24, 0x04	; 4
- 168:	8f 60       	ori	r24, 0x0F	; 15
- 16a:	84 b9       	out	0x04, r24	; 4
- 16c:	08 95       	ret
+ 1d4:	84 b1       	in	r24, 0x04	; 4
+ 1d6:	8f 60       	ori	r24, 0x0F	; 15
+ 1d8:	84 b9       	out	0x04, r24	; 4
+ 1da:	08 95       	ret
 
-0000016e <main>:
+000001dc <main>:
 }
 
 int main(void) {
 	cli();           // Desactiva interrupciones
- 16e:	f8 94       	cli
+ 1dc:	f8 94       	cli
 	setup();
- 170:	0e 94 b0 00 	call	0x160	; 0x160 <setup>
+ 1de:	0e 94 e7 00 	call	0x1ce	; 0x1ce <setup>
 	UART_init();     // Inicializa UART
- 174:	0e 94 4b 00 	call	0x96	; 0x96 <UART_init>
+ 1e2:	0e 94 4b 00 	call	0x96	; 0x96 <UART_init>
 	sei();           // Activa interrupciones
- 178:	78 94       	sei
+ 1e6:	78 94       	sei
 
 	UART_sendString_ALT("Hola desde UART!\r\n");
- 17a:	80 e0       	ldi	r24, 0x00	; 0
- 17c:	91 e0       	ldi	r25, 0x01	; 1
- 17e:	0e 94 65 00 	call	0xca	; 0xca <UART_sendString_ALT>
- 182:	ff cf       	rjmp	.-2      	; 0x182 <main+0x14>
+ 1e8:	8e ec       	ldi	r24, 0xCE	; 206
+ 1ea:	91 e0       	ldi	r25, 0x01	; 1
+ 1ec:	0e 94 72 00 	call	0xe4	; 0xe4 <UART_sendString_ALT>
+	ShowMenu();
+ 1f0:	0e 94 91 00 	call	0x122	; 0x122 <ShowMenu>
+ 1f4:	ff cf       	rjmp	.-2      	; 0x1f4 <main+0x18>
 
-00000184 <_exit>:
- 184:	f8 94       	cli
+000001f6 <_exit>:
+ 1f6:	f8 94       	cli
 
-00000186 <__stop_program>:
- 186:	ff cf       	rjmp	.-2      	; 0x186 <__stop_program>
+000001f8 <__stop_program>:
+ 1f8:	ff cf       	rjmp	.-2      	; 0x1f8 <__stop_program>
